@@ -1237,10 +1237,17 @@ static int load_ddf_local(int fd, struct ddf_super *super,
 		dl->vlist[i] = NULL;
 	super->dlist = dl;
 	dl->pdnum = -1;
-	for (i = 0; i < be16_to_cpu(super->active->max_pd_entries); i++)
-		if (memcmp(super->phys->entries[i].guid,
-			   dl->disk.guid, DDF_GUID_LEN) == 0)
-			dl->pdnum = i;
+	{
+		unsigned int max_pdes = ddf_safe_entry_count(super->pdsize,
+				offsetof(struct phys_disk, entries),
+				sizeof(super->phys->entries[0]),
+				be16_to_cpu(super->active->max_pd_entries));
+
+		for (i = 0; i < max_pdes; i++)
+			if (memcmp(super->phys->entries[i].guid,
+				   dl->disk.guid, DDF_GUID_LEN) == 0)
+				dl->pdnum = i;
+	}
 
 	/* Now the config list. */
 	/* 'conf' is an array of config entries, some of which are
